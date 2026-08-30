@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+     <meta charset="UTF-8">
+
+    <meta                                                          name="viewport"                                            content="width=device-width, initial-scale=1.0"        >
+
+    <title>Dorm Admin</title>
+
+    <link rel="stylesheet" href="/style.css">
+
+</head>
+
+
+<body>
+
+<header>
+
+    <h1>Dorm Server</h1>
+
+    <p>Administrator Panel</p>
+
+</header>
+
+
+<main>
+
+    <section class="card">
+
+        <h2>Create Post</h2>
+
+
+        <textarea
+            id="title"
+            type="text"
+            placeholder="Message"
+	    ></textarea>
+
+
+        <input
+            id="message"
+            placeholder="Alias"
+        >
+
+
+        <label>
+            Expiration:
+        </label>
+
+        <br><br>
+
+
+        <input
+            id="expires"
+            type="datetime-local"
+        >
+
+
+        <button
+            onclick="createAnnouncement()"
+        >
+            Post
+        </button>
+
+        <p id="status"></p>
+
+    </section>
+
+
+    <section>
+
+        <h2>Current Posts</h2>
+
+        <div id="announcement-list">
+
+            Loading...
+
+        </div>
+
+    </section>
+
+
+    <p>
+
+        <a href="/admin/logout">
+            Logout
+        </a>
+
+        |
+
+        <a href="/">
+            Main page
+        </a>
+
+    </p>
+
+</main>
+
+
+<script>
+
+async function loadAnnouncements() {
+
+    const container =
+        document.getElementById(
+            "announcement-list"
+        );
+
+    const response =
+        await fetch(
+            "/api/announcements"
+        );
+
+    const announcements =
+        await response.json();
+
+    container.innerHTML = "";
+
+
+    if (announcements.length === 0) {
+
+        container.innerHTML =
+            "<p>No announcements.</p>";
+
+        return;
+    }
+
+
+    announcements.forEach(
+        announcement => {
+
+            const article =
+                document.createElement(
+                    "article"
+                );
+
+            article.className =
+                "announcement";
+
+
+            const title =
+                document.createElement(
+                    "h3"
+                );
+
+            title.textContent =
+                announcement.title;
+
+
+            const message =
+                document.createElement(
+                    "p"
+                );
+
+            message.textContent =
+                announcement.message;
+
+
+            const expiration =
+                document.createElement(
+                    "small"
+                );
+
+            expiration.textContent =
+                "Expires: " +
+                new Date(
+                    announcement.expires
+                ).toLocaleString();
+
+
+            const deleteButton =
+                document.createElement(
+                    "button"
+                );
+
+            deleteButton.textContent =
+                "Delete";
+
+
+            deleteButton.onclick =
+                () => deleteAnnouncement(
+                    announcement.id
+                );
+
+
+            article.appendChild(title);
+
+            article.appendChild(message);
+
+            article.appendChild(expiration);
+
+            article.appendChild(
+                document.createElement("br")
+            );
+
+            article.appendChild(
+                document.createElement("br")
+            );
+
+            article.appendChild(
+                deleteButton
+            );
+
+
+            container.appendChild(
+                article
+            );
+        }
+    );
+}
+
+
+async function createAnnouncement() {
+
+    const title =
+        document.getElementById(
+            "title"
+        ).value.trim();
+
+
+    const message =
+        document.getElementById(
+            "message"
+        ).value.trim();
+
+
+    const expires =
+        document.getElementById(
+            "expires"
+        ).value;
+
+
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+
+    if (!title ||
+        !message ||
+        !expires) {
+
+        status.textContent =
+            "Fill in all fields.";
+
+        return;
+    }
+
+
+    const response =
+        await fetch(
+            "/api/announcements",
+            {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    title:
+                        title,
+
+                    message:
+                        message,
+
+                    expires:
+                        expires
+
+                })
+            }
+        );
+
+
+    const result =
+        await response.json();
+
+
+    if (!response.ok) {
+
+        status.textContent =
+            result.error ||
+            "Failed to create announcement.";
+
+        return;
+    }
+
+
+    status.textContent =
+        "Announcement posted!";
+
+
+    document.getElementById(
+        "title"
+    ).value = "";
+
+
+    document.getElementById(
+        "message"
+    ).value = "";
+
+
+    document.getElementById(
+        "expires"
+    ).value = "";
+
+
+    loadAnnouncements();
+}
+
+
+async function deleteAnnouncement(id) {
+
+    const confirmed =
+        confirm(
+            "Delete this announcement?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    await fetch(
+        "/api/announcements/" + id,
+        {
+            method: "DELETE"
+        }
+    );
+
+
+    loadAnnouncements();
+}
+
+
+loadAnnouncements();
+
+
+// Refresh admin list every 30 seconds
+setInterval(
+    loadAnnouncements,
+    30000
+);
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Free Wall - Add Post</title>
+
+    <link rel="stylesheet" href="/style.css">
+
+</head>
+
+
+<body>
+
+<header>
+
+    <h1>Free Wall</h1>
+
+    <p>Create a new post</p>
+
+</header>
+
+
+<main>
+
+    <!-- Create Post -->
+
+    <section class="card">
+
+        <h2>New Post</h2>
+
+        <input
+            id="alias"
+            type="text"
+            maxlength="30"
+            placeholder="Alias"
+        >
+
+        <textarea
+            id="message"
+            maxlength="500"
+            placeholder="Write your post..."
+        ></textarea>
+
+        <button onclick="createPost()">
+            Post
+        </button>
+
+        <p id="status"></p>
+
+    </section>
+
+
+    <!-- Current Posts -->
+
+    <section>
+
+        <h2>Current Posts</h2>
+
+        <div id="post-list">
+
+            Loading...
+
+        </div>
+
+    </section>
+
+
+    <p>
+
+        <a href="/">
+            ← Back to Free Wall
+        </a>
+
+    </p>
+
+</main>
+
+
+<script>
+
+async function loadPosts() {
+
+    const container =
+        document.getElementById("post-list");
+
+    try {
+
+        const response =
+            await fetch("/api/posts");
+
+        const posts =
+            await response.json();
+
+        container.innerHTML = "";
+
+
+        if (posts.length === 0) {
+
+            container.innerHTML =
+                "<p>No posts yet.</p>";
+
+            return;
+        }
+
+
+        posts.forEach(post => {
+
+            const article =
+                document.createElement("article");
+
+            article.className =
+                "announcement";
+
+
+            const alias =
+                document.createElement("h3");
+
+            alias.textContent =
+                post.alias;
+
+
+            const message =
+                document.createElement("p");
+
+            message.textContent =
+                post.message;
+
+
+            const date =
+                document.createElement("small");
+
+            date.textContent =
+                new Date(
+                    post.created
+                ).toLocaleString();
+
+
+            article.appendChild(alias);
+
+            article.appendChild(message);
+
+            article.appendChild(date);
+
+            container.appendChild(article);
+
+        });
+
+
+    } catch (error) {
+
+        container.innerHTML =
+            "<p>Unable to load posts.</p>";
+
+        console.error(error);
+
+    }
+
+}
+
+
+async function createPost() {
+
+    const alias =
+        document.getElementById(
+            "alias"
+        ).value.trim();
+
+
+    const message =
+        document.getElementById(
+            "message"
+        ).value.trim();
+
+
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+
+    if (!alias || !message) {
+
+        status.textContent =
+            "Please fill in both fields.";
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/posts",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        alias: alias,
+
+                        message: message
+
+                    })
+
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            status.textContent =
+                result.error ||
+                "Failed to create post.";
+
+            return;
+
+        }
+
+
+        status.textContent =
+            "Post created!";
+
+
+        document.getElementById(
+            "alias"
+        ).value = "";
+
+
+        document.getElementById(
+            "message"
+        ).value = "";
+
+
+        // Refresh the list
+        loadPosts();
+
+
+    } catch (error) {
+
+        status.textContent =
+            "Unable to contact the server.";
+
+        console.error(error);
+
+    }
+
+}
+
+
+loadPosts();
+
+
+// Refresh every 30 seconds
+setInterval(
+    loadPosts,
+    30000
+);
+
+</script>
+
+</body>
+
+</html>
